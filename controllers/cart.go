@@ -5,6 +5,8 @@ import (
 	"errors"
 	"github.com/gin-gonic/gin"
 	"github.com/koinav/ecommerce/database"
+	"github.com/koinav/ecommerce/models"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"log"
@@ -56,6 +58,7 @@ func (app *Application) AddToCart() gin.HandlerFunc {
 		err = database.AddProductToCart(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err)
+			return
 		}
 		c.JSON(http.StatusOK, "Successfully added to cart")
 
@@ -93,6 +96,7 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 		err = database.RemoveCartItem(ctx, app.prodCollection, app.userCollection, productID, userQueryID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, err)
+			return
 		}
 		c.JSON(http.StatusOK, "Item removed Successfully")
 
@@ -100,7 +104,52 @@ func (app *Application) RemoveItem() gin.HandlerFunc {
 }
 
 func GetItemFromCart() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID := c.Query("id")
 
+		if userID == "" {
+			c.Header("Content-Type", "application/json")
+			c.JSON(http.StatusNotFound, gin.H{"error": "invalid id"})
+			c.Abort()
+			return
+		}
+
+		id, err := primitive.ObjectIDFromHex(userID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "internal error")
+			return
+		}
+
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+
+		var filledCart models.User
+		err := UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: userID}}).Decode(&filledCart)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, "not found")
+			return
+		}
+
+		filterMatch := bson.D{{Key: "$match", Value: bson.D{primitive.E{Key: "_id", Value: userID}}}}
+		unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$user_cart"}}}}
+		grouping := bson.D{{Key: "$group", Value: bson.D{primitive.E{Key: "_id", Value: "$_id"}, {Key: "total", Value: bson.D{primitive.E{Key: "$sum", Value: "$user_cart.price"}}}}}}
+		pointCursor, err := UserCollection.Aggregate(ctx, mongo.Pipeline{filterMatch, unwind, grouping})
+		if err != nil {
+			log.Println(err)
+		}
+
+		var listing []bson.M
+		if err := pointCursor.All(ctx, &listing); err != nil {
+			log.Println(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+		}
+
+		for _, json := range listing {
+			c.JSON(http.StatusOK, json["total"])
+			c.JSON(http.StatusOK, filledCart.UserCart)
+		}
+
+	}
 }
 
 func (app *Application) BuyFromCart() gin.HandlerFunc {
