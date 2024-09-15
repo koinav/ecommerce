@@ -218,4 +218,6 @@ http://localhost:8000/users/search?name=IvO
 
   http://localhost:8000/instantbuy?userID=xxxxx&productID=xxxxx
 
+  ![structure](structure.png)
+
 _Проект еще находится в разработке и улучшается..._
