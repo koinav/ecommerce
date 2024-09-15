@@ -170,7 +170,7 @@ func ProductViewerAdmin() gin.HandlerFunc {
 			return
 		}
 
-		c.JSON(http.StatusOK, "successfully added")
+		c.JSON(http.StatusOK, "Successfully added")
 	}
 }
 
