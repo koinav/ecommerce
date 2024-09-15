@@ -26,7 +26,7 @@ func main() {
 
 	router.GET("/addtocart", app.AddToCart())
 	router.GET("/removeitem", app.RemoveItem())
-	router.GET("/listcart", controllers.GetItemFromCart())
+	router.GET("/listcart", controllers.GetUserCart())
 	router.POST("/addaddress", controllers.AddAddress())
 	router.PUT("/edithomeaddress", controllers.EditHomeAddress())
 	router.PUT("/editworkaddress", controllers.EditWorkAddress())

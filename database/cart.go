@@ -95,7 +95,7 @@ func BuyItemFromCart(ctx context.Context,
 	orderCart.OrderCart = make([]models.ProductInCart, 0)
 	orderCart.PaymentMethod.COD = true
 
-	unwind := bson.D{{Key: "&unwind", Value: bson.D{primitive.E{Key: "path", Value: "$user_cart"}}}}
+	unwind := bson.D{{Key: "$unwind", Value: bson.D{primitive.E{Key: "path", Value: "$user_cart"}}}}
 	grouping := bson.D{{
 		Key: "$group",
 		Value: bson.D{primitive.E{Key: "_id", Value: "$_id"},
@@ -114,12 +114,12 @@ func BuyItemFromCart(ctx context.Context,
 		return err
 	}
 
-	var totalPrice int
+	var totalPrice int32
 	for _, item := range getUserCart {
 		price := item["total"]
-		totalPrice = price.(int)
+		totalPrice = price.(int32)
 	}
-	orderCart.Price = totalPrice
+	orderCart.Price = int(totalPrice)
 
 	filter := bson.D{primitive.E{Key: "_id", Value: "id"}}
 	update := bson.D{{Key: "$push", Value: bson.D{primitive.E{Key: "orders", Value: orderCart}}}}
