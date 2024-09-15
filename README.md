@@ -220,6 +220,6 @@ http://localhost:8000/users/search?name=IvO
 
   http://localhost:8000/instantbuy?userID=xxxxx&productID=xxxxx
 
-  ![structure](structure.png)
+  <img src="structure.png" alt="Описание изображения" style="border: 2px solid #000; border-radius: 10px; width: 350;">
 
 _Проект еще находится в разработке и улучшается..._
