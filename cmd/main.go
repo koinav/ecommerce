@@ -5,6 +5,7 @@ import (
 	"github.com/koinav/ecommerce/controllers"
 	"github.com/koinav/ecommerce/database"
 	"github.com/koinav/ecommerce/middleware"
+	"github.com/koinav/ecommerce/routes"
 	"log"
 	"os"
 )
@@ -20,11 +21,16 @@ func main() {
 	router := gin.New()
 	router.Use(gin.Logger())
 
-	router.UserRoutes(router)
+	routes.UserRoutes(router)
 	router.Use(middleware.Authentication())
 
 	router.GET("/addtocart", app.AddToCart())
-	router.GET("/removeitem", app.AddItem())
+	router.GET("/removeitem", app.RemoveItem())
+	router.GET("/listcart", controllers.GetItemFromCart())
+	router.POST("/addaddress", controllers.AddAddress())
+	router.PUT("/edithomeaddress", controllers.EditHomeAddress())
+	router.PUT("/editworkaddress", controllers.EditWorkAddress())
+	router.GET("/deleteaddresses", controllers.DeleteAddress())
 	router.GET("/cartcheckout", app.BuyFromCart())
 	router.GET("/instantbuy", app.InstantBuy())
 

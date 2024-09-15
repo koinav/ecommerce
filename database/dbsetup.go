@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-var client *mongo.Client = DBSetup()
+var Client *mongo.Client = DBSetup()
 
 func DBSetup() *mongo.Client {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

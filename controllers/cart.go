@@ -19,7 +19,7 @@ type Application struct {
 	userCollection *mongo.Collection
 }
 
-func NewApplication(prodCollection, userCollection *mongo.Collection) *Application {
+func NewApp(prodCollection, userCollection *mongo.Collection) *Application {
 	return &Application{
 		prodCollection: prodCollection,
 		userCollection: userCollection,
@@ -124,7 +124,7 @@ func GetItemFromCart() gin.HandlerFunc {
 		defer cancel()
 
 		var filledCart models.User
-		err := UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: userID}}).Decode(&filledCart)
+		err = UserCollection.FindOne(ctx, bson.D{primitive.E{Key: "_id", Value: id}}).Decode(&filledCart)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, "not found")
 			return

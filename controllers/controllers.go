@@ -7,6 +7,7 @@ import (
 	"github.com/go-playground/validator/v10"
 	"github.com/koinav/ecommerce/database"
 	"github.com/koinav/ecommerce/models"
+	"github.com/koinav/ecommerce/tokens"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -87,7 +88,12 @@ func SignUp() gin.HandlerFunc {
 		user.UpdatedAt = user.CreatedAt
 		user.ID = primitive.NewObjectID()
 		user.UserID = user.ID.Hex()
-		token, refreshToken := generate.TokenGenerator(*user.Email, *user.FirstName, *user.LastName, user.UserID)
+		token, refreshToken, err := tokens.TokenGenerator(*user.Email, *user.FirstName, *user.LastName, user.UserID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+			return
+		}
+
 		user.Token = &token
 		user.RefreshToken = &refreshToken
 		user.UserCart = make([]models.ProductInCart, 0)
@@ -129,16 +135,42 @@ func LogIn() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken, _ := generate.TokenGenerator(*foundUser.Email, *foundUser.FirstName, *foundUser.LastName, foundUser.UserID)
+		token, refreshToken, err := tokens.TokenGenerator(*foundUser.Email, *foundUser.FirstName, *foundUser.LastName, foundUser.UserID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+			return
+		}
 
-		generate.UpdateAllTokens(token, refreshToken, foundUser.UserID)
+		err = tokens.UpdateAllTokens(token, refreshToken, foundUser.UserID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "internal error"})
+			return
+		}
 
 		c.JSON(http.StatusFound, foundUser)
 	}
 }
 
 func ProductViewerAdmin() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var ctx, cancel = context.WithTimeout(context.Background(), 100*time.Second)
+		defer cancel()
+		var products models.Product
 
+		if err := c.BindJSON(&products); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		products.ProductID = primitive.NewObjectID()
+		_, err := ProductCollection.InsertOne(ctx, products)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "not inserted"})
+			return
+		}
+
+		c.JSON(http.StatusOK, "successfully added")
+	}
 }
 
 func SearchProduct() gin.HandlerFunc {
